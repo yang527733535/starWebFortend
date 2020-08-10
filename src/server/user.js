@@ -14,3 +14,14 @@ export async function login (params) {
     data: params,
   });
 }
+
+export async function reqUploadToken (params) {
+  return request(`${BASE_URL}/api/auth/createVideo'`, {
+    method: 'POST',
+    data: params,
+  });
+}
+
+
+
+// reqUploadToken

@@ -30,12 +30,10 @@ const Index = () => {
       console.log('res: ', res);
       if (res.data.code === 200) {
         message.success("登录成功")
-
         //在这里要把token存起来咯
         const token = res.data.data.token
         console.log('token: ', token);
         localStorage.setItem("token", token)
-
       }
     })
 
@@ -54,7 +52,6 @@ const Index = () => {
       },
       method: 'get',
       url: 'http://localhost:8080/api/auth/me',
-
     }).then((res) => {
       console.log(res)
     })
