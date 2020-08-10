@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Checkbox, Card } from 'antd';
+import { Form, Input, Button, Checkbox, message, Card } from 'antd';
 import styles from './index.less'
 import axios from 'axios'
 import Qs from 'qs'
@@ -18,16 +18,25 @@ const Index = () => {
   };
 
   const onFinish = async values => {
-    console.log('Success:', values);
+
     axios({
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       method: 'post',
-      url: 'http://121.196.194.151/api/auth/login',
+      url: 'http://localhost:8080/api/auth/login',
       data: Qs.stringify(values)
     }).then((res) => {
       console.log('res: ', res);
+      if (res.data.code === 200) {
+        message.success("登录成功")
+
+        //在这里要把token存起来咯
+        const token = res.data.data.token
+        console.log('token: ', token);
+        localStorage.setItem("token", token)
+
+      }
     })
 
   };
@@ -36,6 +45,22 @@ const Index = () => {
     console.log('Failed:', errorInfo);
 
   };
+
+  const reqUserInfo = () => {
+    let val = localStorage.getItem('token')
+    axios({
+      headers: {
+        'Authorization': 'Bearer ' + val
+      },
+      method: 'get',
+      url: 'http://localhost:8080/api/auth/me',
+
+    }).then((res) => {
+      console.log(res)
+    })
+  }
+
+
   return <div
     className={styles.mybox}
   >
@@ -72,6 +97,10 @@ const Index = () => {
         </Button>
         </Form.Item>
       </Form>
+    </Card>
+
+    <Card>
+      <Button onClick={() => { reqUserInfo() }}>获取该用户信息</Button>
     </Card>
 
   </div>
