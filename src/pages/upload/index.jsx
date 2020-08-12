@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button } from 'antd';
 import axios from 'axios'
 import Qs from 'qs'
@@ -8,6 +8,7 @@ import Qs from 'qs'
 import { Upload, message } from 'antd';
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 const Index = () => {
+  const [key, setkey] = useState("");
   const [imageUrl, setimageUrl] = useState("");
   const [loading, setloading] = useState(false);
   const [imagetoken, setimagetoken] = useState("");
@@ -16,16 +17,19 @@ const Index = () => {
     wrapperCol: { span: 16 },
   };
   const onFinish = values => {
+
+    delete values.avatar
+    const myparam = { ...values, key }
     let val = localStorage.getItem('token')
-    return
+
     axios({
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'Bearer ' + val
       },
       method: 'post',
-      url: 'http://localhost:8080/api/auth/uploadtoken',
-      data: Qs.stringify(values)
+      url: 'http://localhost:8080/api/auth/createVideo',
+      data: Qs.stringify(myparam)
     }).then((res) => {
       console.log('res: ', res);
 
@@ -35,26 +39,7 @@ const Index = () => {
 
   function beforeUpload(file) {
 
-    console.log(file.name)
-    const myfilename = {
-      filename: file.name
-    }
-    console.log(myfilename)
-    let val = localStorage.getItem('token')
-    axios({
-      headers: {
-        'Authorization': 'Bearer ' + val
-      },
-      method: 'post',
-      url: 'http://localhost:8080/api/auth/uploadtoken',
-      data: Qs.stringify(myfilename)
-    }).then((res) => {
-      console.log(res)
-      //在这里要把东西存起来
-      console.log(res.data.data.signedPutURL)
-      setimagetoken(res.data.data.signedPutURL)
-      setimageUrl(res.data.data.signedGetURL)
-    })
+
 
     const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isJpgOrPng) {
@@ -101,7 +86,7 @@ const Index = () => {
     </div>
   );
 
-  function mycustomRequest({
+  async function mycustomRequest({
     action,
     file,
     headers,
@@ -110,30 +95,58 @@ const Index = () => {
     onSuccess,
     withCredentials,
   }) {
-    console.log('mycustomRequest')
 
-    const reader = new FileReader();
-    console.log(file)
-    reader.readAsArrayBuffer(file);
-    let fileData = null;
-    reader.onload = (e) => {
-      // 在文件读取结束后执行的操作
-      fileData = e.target.result;
-      console.log(fileData)
-      // 使用 axios 进行文件上传的请求
-      axios.put(imagetoken, fileData, {
-        withCredentials,
-        headers,
-        onUploadProgress: ({ total, loaded }) => {
-          // 进行上传进度输出，更加直观
-          onProgress({ percent: Math.round(loaded / total * 100).toFixed(2) }, file);
-        },
-      }).then(response => {
-        console.log(response)
-        onSuccess(response, file);
-      })
-        .catch(onError);
-    };
+    //在这里暂停一秒
+
+
+    const myfilename = {
+      filename: file.name
+    }
+    console.log(myfilename)
+    let val = localStorage.getItem('token')
+    await axios({
+      headers: {
+        'Authorization': 'Bearer ' + val
+      },
+      method: 'post',
+      url: 'http://localhost:8080/api/auth/uploadtoken',
+      data: Qs.stringify(myfilename)
+    }).then((res) => {
+      console.log(res)
+      //在这里要把东西存起来
+      const imagetoken = res.data.data.signedPutURL
+      const imageUrl = res.data.data.signedGetURL
+      const key = res.data.data.key
+      // setimageUrl()
+      const reader = new FileReader();
+      console.log(file)
+      reader.readAsArrayBuffer(file);
+      let fileData = null;
+      reader.onload = (e) => {
+        // 在文件读取结束后执行的操作
+        fileData = e.target.result;
+        console.log(fileData)
+        // 使用 axios 进行文件上传的请求
+        console.log("123----imagetoken", imagetoken)
+        axios.put(imagetoken, fileData, {
+          withCredentials,
+          headers,
+          onUploadProgress: ({ total, loaded }) => {
+            // 进行上传进度输出，更加直观
+            onProgress({ percent: Math.round(loaded / total * 100).toFixed(2) }, file);
+          },
+        }).then(response => {
+          console.log(response)
+          onSuccess(response, file);
+          setimageUrl(imageUrl)
+          setkey(key)
+        })
+          .catch(onError);
+      };
+    })
+
+
+
   }
   return <div>
 
@@ -152,11 +165,12 @@ const Index = () => {
         <Input />
       </Form.Item>
       <Form.Item name='avatar' label="avatar"
-        rules={[{ required: true }]}>
+        rules={[{ required: false }]}>
         <Upload
           headers={{
             'Content-Type': 'image/png',
           }}
+          action={imagetoken}
           name="avatar"
           listType="picture-card"
           className="avatar-uploader"
